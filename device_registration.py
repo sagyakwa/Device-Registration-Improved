@@ -59,7 +59,7 @@ class DeviceRegistration:
 				if key['name'] == 'challengeKey':
 					return key['value']
 
-	def my_session(self, user_id=None, username=None, mac_address=None, get_mac_address=False, add_device=False, add_user=False, search_user=False, description=None, sponsor=None):
+	def my_session(self, get_mac_address=False, add_device=False, user_id=None, username=None, mac_address=None, add_user=False, search_user=False, description=None, sponsor=None):
 		with requests.Session() as session:
 			web = session.post(self.login_url, cookies=self.cookies, data=self.data, headers=self.headers)
 			self.challenge_key = self.get_challenge_key(web.content)
