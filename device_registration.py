@@ -80,13 +80,14 @@ class DeviceRegistration:
 			web = session.post(self.login_url, cookies=self.cookies, data=self.data, headers=self.headers)
 			self.challenge_key = get_challenge_key(web.content)
 			if get_mac_address:
-				return self.find_mac_address(session, username)
+				return self.find_mac_address(session, username, user_id)
 			elif add_user:
-				return self.add_new_user(session, username)
+				return self.add_new_user(session, username, sponsor)
 			elif search_user:
 				return self.search(session, username)
 			elif add_device:
-				self.devices(session, user_id, username, mac_address=mac_address, description=description, sponsor=sponsor, add=True)
+				self.devices(session, user_id, username, mac_address=mac_address, description=description,
+				             sponsor=sponsor, add=True)
 			elif purge_devices:
 				self.devices(session, user_id, username, purge=True)
 
@@ -119,9 +120,9 @@ class DeviceRegistration:
 				user_info = name['onclick']
 				user_id = user_info.split()[2].replace("'", "").rstrip(',')
 				return True, user_id
-		return False
+		return False, None
 
-	def find_mac_address(self, session: object, username: object) -> object:
+	def find_mac_address(self, session: object, username: object, user_id) -> object:
 		"""
 
 		:rtype: object
@@ -140,7 +141,19 @@ class DeviceRegistration:
 		}
 		user_info = session.post(self.request_url, data=user_data)
 		source_code = user_info.content
-		soup = BeautifulSoup(source_code, 'lxml')
+		self.challenge_key = get_challenge_key(source_code)
+		view_devices_data = {
+			'view': 'showDevicesAll',
+			'sort': 'userName',
+			'sortDir': 'ASC',
+			'challengeKey': f'{self.challenge_key}',
+			'subview': 'http://fsunac-1.framingham.edu:80/administration?view=showDevicesAll',
+			'filterText': f'{username}',
+			'userId': f'{user_id}',
+			'showDevicesForUser': 'Devices For User'
+		}
+		view_devices = session.post(self.request_url, data=view_devices_data)
+		soup = BeautifulSoup(view_devices.content, 'lxml')
 		for mac_addr in soup.find_all('a', href="#"):
 			if re.match('[0-9a-f]{2}([-:]?)[0-9a-f]{2}(\\1[0-9a-f]{2}){4}$', mac_addr.text, re.IGNORECASE):
 				list_of_mac_addresses.append(mac_addr.text)
@@ -150,12 +163,13 @@ class DeviceRegistration:
 		else:
 			return None
 
-	def add_new_user(self, session: object, username: object) -> object:
+	def add_new_user(self, session: object, username: object, sponsor: object):
 		"""
 
 		:rtype: object
 		:param session:
 		:param username:
+		:param sponsor:
 		"""
 		current_date = datetime.now()
 		registration_start_date = f'{current_date.strftime("%m/%d/%Y")} 0:00:00'
@@ -185,7 +199,7 @@ class DeviceRegistration:
 			'phoneNumber': '',
 			'regStartTime': f'{registration_start_date}',
 			'regExpirationTime': f'{registration_end_date}',
-			'sponsorEmail': 'Test',
+			'sponsorEmail': f'{sponsor}',
 			'userType': 'Web Authentication',
 			'userMaxDevice': '',
 			'challengeKey': f'{self.challenge_key}',
@@ -302,8 +316,9 @@ class Container(dict):
 
 # Find mac address for user
 # Add user (CAUTION)
-DeviceRegistration().my_session(add_user=True, username='testdev')
-val, id_ = DeviceRegistration().my_session(search_user=True, username='testdev')
+# DeviceRegistration().my_session(add_user=True, username='testdev')
+# val, id_ = DeviceRegistration().my_session(search_user=True, username='poppyda')
+# print(val, id_)
 # To Add you must search first...for secret key, and user_id
-# DeviceRegistration().my_session(add_device=True, user_id=id_, username='testdev', mac_address='10:10:10:10:10:13', description='TestAdd', sponsor='SamTest')
-DeviceRegistration().my_session(purge_devices=True, user_id=id_, username='testdev')
+DeviceRegistration().my_session(add_device=True,  username='testdev', mac_address='10:10:10:10:10:13', description='TestAdd', sponsor='SamTest')
+# DeviceRegistration().my_session(purge_devices=True, user_id=id_, username='testdev')
