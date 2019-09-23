@@ -1,7 +1,8 @@
+import json
+import re
 from datetime import datetime
 
 import requests
-import re
 from bs4 import BeautifulSoup
 
 
@@ -52,7 +53,9 @@ class DeviceRegistration:
 			source = website.content
 			self.challenge_key = get_challenge_key(source)
 
-	def my_session(self, get_mac_address: object = False, add_device: object = False, user_id: object = None, username: object = None,
+	def my_session(self, get_mac_address: object = False, add_device: object = False, purge_devices: object = False,
+	               user_id: object = None,
+	               username: object = None,
 	               mac_address: object = None,
 	               add_user: object = False,
 	               search_user: object = False,
@@ -63,6 +66,7 @@ class DeviceRegistration:
 		:rtype: object
 		:param get_mac_address:
 		:param add_device:
+		:param purge_devices:
 		:param user_id:
 		:param username:
 		:param mac_address:
@@ -82,7 +86,9 @@ class DeviceRegistration:
 			elif search_user:
 				return self.search(session, username)
 			elif add_device:
-				self.add_device(session, user_id, username, mac_address, description, sponsor)
+				self.devices(session, user_id, username, mac_address=mac_address, description=description, sponsor=sponsor, add=True)
+			elif purge_devices:
+				self.devices(session, user_id, username, purge=True)
 
 	def search(self, session: object, username: object) -> object:
 		"""
@@ -140,10 +146,9 @@ class DeviceRegistration:
 				list_of_mac_addresses.append(mac_addr.text)
 
 		if len(list_of_mac_addresses) > 0:
-			print(list_of_mac_addresses)
 			return list_of_mac_addresses
 		else:
-			print(f"no devices for {username}")
+			return None
 
 	def add_new_user(self, session: object, username: object) -> object:
 		"""
@@ -154,7 +159,8 @@ class DeviceRegistration:
 		"""
 		current_date = datetime.now()
 		registration_start_date = f'{current_date.strftime("%m/%d/%Y")} 0:00:00'
-		registration_end_date = f"{current_date.strftime('%m')}/{current_date.strftime('%d')}/{int(current_date.strftime('%Y')) + 2} 0:00:00"
+		registration_end_date = f"{current_date.strftime('%m')}/{current_date.strftime('%d')}/" \
+		                        f"{int(current_date.strftime('%Y')) + 2} 0:00:00"
 		# View all users to get challenge_key
 		show_users = session.get('http://fsunac-1.framingham.edu/administration?view=showUsers')
 		self.challenge_key = get_challenge_key(show_users.content)
@@ -163,7 +169,7 @@ class DeviceRegistration:
 			'view': 'showUsers',
 			'sort': 'userName',
 			'sortDir': 'ASC',
-			'challengeKey': f'{self.challenge_key}',  # Not need here for some reason
+			'challengeKey': f'{self.challenge_key}',  # Not needed here for some reason
 			'subView': 'http://fsunac-1.framingham.edu:80/administration?view=showUsersAll',
 			'filterText': '',
 			'showUsersAdd': 'Add',
@@ -187,7 +193,8 @@ class DeviceRegistration:
 		}
 		session.post(self.request_url, data=user_data, headers=self.headers)
 
-	def add_device(self, session: object, user_id: object, username: object, mac_address: object, description: object, sponsor: object) -> object:
+	def devices(self, session: object, user_id: object, username: object = None, mac_address: object = None,
+	            description: object = None, sponsor: object = None, add=None, purge=None):
 		"""
 
 		:rtype: object
@@ -197,6 +204,8 @@ class DeviceRegistration:
 		:param mac_address:
 		:param description:
 		:param sponsor:
+		:param purge:
+		:param add:
 		"""
 		pre_register_data = {
 			'view': 'showUsers',
@@ -221,8 +230,46 @@ class DeviceRegistration:
 			'addDevice': 'Submit',
 		}
 
-		register_device = session.post(self.request_url, data=register_data, headers=self.headers)
-		print(register_device.status_code)
+		if add:
+			session.post(self.request_url, data=register_data, headers=self.headers)
+		elif purge:
+			# TODO FIX PURGE. DOES NOT PURGE. MIGHT BE DUE TO CHALLENGEKEY -> MIGHT NEED TO SEARCH USER FIRST,
+			#  THEN GET CHALLENGE KEY FROM THAT
+			purge_data = [
+				('view', 'showUsers'),
+				('sort', 'userName'),
+				('sortDir', 'ASC'),
+				('challengeKey', f'{self.challenge_key}'),
+				('subView',
+				 f'http://fsunac-1.framingham.edu:80/administration?view=showDevicesForUser&regUserName={username}'),
+				('filterText', f'{username}'),
+				# ('select_all', ''),
+				# 'deviceId': '47262',
+				# 'deviceId': '47263',
+				('deleteDevice', 'Delete')
+			]
+
+			view_devices_data = {
+				'view': 'showDevicesAll',
+				'sort': 'userName',
+				'sortDir': 'ASC',
+				'challengeKey': f'{self.challenge_key}',
+				'subview': 'http://fsunac-1.framingham.edu:80/administration?view=showDevicesAll',
+				'filterText': f'{username}',
+				'userId': f'{user_id}',
+				'showDevicesForUser': 'Devices For User'
+			}
+			user_info = session.post(self.request_url, data=view_devices_data)
+			self.challenge_key = get_challenge_key(user_info.content)
+
+			soup = BeautifulSoup(user_info.content, 'lxml')
+			for mac_id in soup.find_all('input'):
+				if mac_id['name'] == 'deviceId':
+					mac_tuple = (mac_id['name'], mac_id['value'])
+					purge_data.append(mac_tuple)
+			# Make json string to hold duplicate keys (deviceId in purge_data)
+			new_purge_data = json.dumps(Container(purge_data))
+			session.post(self.request_url, data=new_purge_data)
 
 
 def get_challenge_key(url_content: object) -> object:
@@ -239,12 +286,24 @@ def get_challenge_key(url_content: object) -> object:
 				return key['value']
 
 
+class Container(dict):
+	"""Overload the items method to retain duplicate keys."""
+
+	def __init__(self, items):
+		super().__init__()
+		self[""] = ""
+		self._items = items
+
+	def items(self):
+		return self._items
+
+
 # Tests
 
 # Find mac address for user
 # Add user (CAUTION)
 DeviceRegistration().my_session(add_user=True, username='testdev')
 val, id_ = DeviceRegistration().my_session(search_user=True, username='testdev')
-print(id_)
 # To Add you must search first...for secret key, and user_id
-DeviceRegistration().my_session(add_device=True, user_id=id_, username='testdev', mac_address='10:10:10:10:10:13', description='TestAdd', sponsor='SamTest')
+# DeviceRegistration().my_session(add_device=True, user_id=id_, username='testdev', mac_address='10:10:10:10:10:13', description='TestAdd', sponsor='SamTest')
+DeviceRegistration().my_session(purge_devices=True, user_id=id_, username='testdev')
