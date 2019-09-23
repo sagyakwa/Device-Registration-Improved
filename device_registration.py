@@ -455,20 +455,41 @@ class Container(dict):
 
 
 # Check to see if mac address is valid format eg. (00:00:00:00:00:000) or (00-00-00-00-00-00)
-def check_mac_address(mac_address):
+def check_mac_address(mac_address: object) -> object:
+	"""
+
+	:param mac_address:
+	:return:
+	"""
 	return bool(re.match('[0-9a-f]{2}([-:]?)[0-9a-f]{2}(\\1[0-9a-f]{2}){4}$', mac_address, re.IGNORECASE))
 
 
 # Check to see if username is correct format eg. (teststudent) or (teststudent45) but not (test student)
 def check_sponsor(your_name: object) -> object:
+	"""
+
+	:param your_name:
+	:return:
+	"""
 	return bool(re.match(r'[a-zA-Z]{1,}(.*[\s]?)', your_name, re.IGNORECASE))
 
 
 def check_email(email: object) -> object:
+	"""
+
+	:param email:
+	:return:
+	"""
 	return bool(re.match(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)", email, re.IGNORECASE))
 
 
-def check_username(username, other_user=False):
+def check_username(username: object, other_user: object = False) -> object:
+	"""
+
+	:param username:
+	:param other_user:
+	:return:
+	"""
 	if other_user:
 		return True
 	else:
@@ -501,7 +522,7 @@ class MainWindow(QMainWindow):
 		self.initUI()
 		self.init_config()
 
-	def initUI(self):
+	def initUI(self) -> object:
 		self.setWindowIcon(QIcon(_logo))
 		self.dark_mode_icon = QIcon(resource_path('night_mode.ico'))
 		self.light_mode_icon = QIcon(resource_path('light_mode.ico'))
@@ -550,7 +571,11 @@ class MainWindow(QMainWindow):
 			with open(_config, 'w') as config_file:
 				self.config.write(config_file)
 
-	def disable_widgets(self, bool_val):
+	def disable_widgets(self, bool_val: object) -> object:
+		"""
+
+		:param bool_val:
+		"""
 		objects = [QPushButton, QLineEdit, QMenu, QMenuBar]
 		for item in objects:
 			for child in self.findChildren(item):
@@ -559,7 +584,11 @@ class MainWindow(QMainWindow):
 				else:
 					child.setEnabled(True)
 
-	def other_checked(self, other_checked=True):
+	def other_checked(self, other_checked: object = True) -> object:
+		"""
+
+		:param other_checked:
+		"""
 		if other_checked:
 			self.ui.username_label.setText(
 				'<html><head/><body><p><span style=" color:#ff0000;">*</span>Full Name</p></body></html>')
@@ -595,7 +624,11 @@ class MainWindow(QMainWindow):
 				pass
 
 	@pyqtSlot(int)
-	def on_state_change(self, state):
+	def on_state_change(self, state: object) -> object:
+		"""
+
+		:param state:
+		"""
 		if state == Qt.Checked:
 			if self.sender() == self.ui.student_checkbox:
 				self.other_checked(other_checked=False)
@@ -617,8 +650,12 @@ class MainWindow(QMainWindow):
 				self.ui.student_checkbox.setChecked(True)
 
 	# Function to display an error if we get one
-	def popup_msg(self, title, message):
+	def popup_msg(self, title: object, message: object) -> object:
+		"""
 
+		:param title:
+		:param message:
+		"""
 		QMessageBox.about(self, title, message)
 
 	# Center our application instead of putting it in the top left
@@ -629,7 +666,11 @@ class MainWindow(QMainWindow):
 		frame_gm.moveCenter(center_point)
 		self.move(frame_gm.topLeft())
 
-	def clear_textboxes(self, sponsor=False):
+	def clear_textboxes(self, sponsor: object = False):
+		"""
+
+		:param sponsor:
+		"""
 		self.ui.username_textbox.clear()
 		self.ui.mac_textbox.clear()
 		self.ui.device_textbox.clear()
@@ -676,8 +717,11 @@ class MainWindow(QMainWindow):
 	def on_change_mode_clicked(self):
 		self.change_ui()
 
-	def play_splash(self, bool_val):
+	def play_splash(self, bool_val: object):
+		"""
 
+		:param bool_val:
+		"""
 		def blur_objects(blur=True):
 			objects = [QLabel, QPushButton, QLineEdit, QCheckBox, QMenu, QMenuBar]
 
