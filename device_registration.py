@@ -50,19 +50,31 @@ class DeviceRegistration:
 			self.cookies = website.cookies
 			# Get challenge key!
 			source = website.content
-			self.challenge_key = self.get_challenge_key(source)
+			self.challenge_key = get_challenge_key(source)
 
-	def get_challenge_key(self, url_content):
-		soup = BeautifulSoup(url_content, 'lxml')
-		for element in soup.find_all('form'):
-			for key in element.find_all('input'):
-				if key['name'] == 'challengeKey':
-					return key['value']
+	def my_session(self, get_mac_address: object = False, add_device: object = False, user_id: object = None, username: object = None,
+	               mac_address: object = None,
+	               add_user: object = False,
+	               search_user: object = False,
+	               description: object = None,
+	               sponsor: object = None) -> object:
+		"""
 
-	def my_session(self, get_mac_address=False, add_device=False, user_id=None, username=None, mac_address=None, add_user=False, search_user=False, description=None, sponsor=None):
+		:rtype: object
+		:param get_mac_address:
+		:param add_device:
+		:param user_id:
+		:param username:
+		:param mac_address:
+		:param add_user:
+		:param search_user:
+		:param description:
+		:param sponsor:
+		:return:
+		"""
 		with requests.Session() as session:
 			web = session.post(self.login_url, cookies=self.cookies, data=self.data, headers=self.headers)
-			self.challenge_key = self.get_challenge_key(web.content)
+			self.challenge_key = get_challenge_key(web.content)
 			if get_mac_address:
 				return self.find_mac_address(session, username)
 			elif add_user:
@@ -72,11 +84,18 @@ class DeviceRegistration:
 			elif add_device:
 				self.add_device(session, user_id, username, mac_address, description, sponsor)
 
-	def search(self, session, username):
+	def search(self, session: object, username: object) -> object:
+		"""
+
+		:param session:
+		:param username:
+		:return:
+		:rtype: object
+		"""
 		user_info = []
 		search_user = session.get('http://fsunac-1.framingham.edu/administration?view=showUsers')
 		source = search_user.content
-		self.challenge_key = self.get_challenge_key(source)
+		self.challenge_key = get_challenge_key(source)
 		user_data = {
 			'view': 'showUsers',
 			'sort': 'userName',
@@ -96,7 +115,14 @@ class DeviceRegistration:
 				return True, user_id
 		return False
 
-	def find_mac_address(self, session, username):
+	def find_mac_address(self, session: object, username: object) -> object:
+		"""
+
+		:rtype: object
+		:param session:
+		:param username:
+		:return:
+		"""
 		list_of_mac_addresses = []
 		user_data = {
 			'view': 'showDevicesAll',
@@ -119,13 +145,19 @@ class DeviceRegistration:
 		else:
 			print(f"no devices for {username}")
 
-	def add_new_user(self, session, username):
+	def add_new_user(self, session: object, username: object) -> object:
+		"""
+
+		:rtype: object
+		:param session:
+		:param username:
+		"""
 		current_date = datetime.now()
 		registration_start_date = f'{current_date.strftime("%m/%d/%Y")} 0:00:00'
 		registration_end_date = f"{current_date.strftime('%m')}/{current_date.strftime('%d')}/{int(current_date.strftime('%Y')) + 2} 0:00:00"
 		# View all users to get challenge_key
 		show_users = session.get('http://fsunac-1.framingham.edu/administration?view=showUsers')
-		self.challenge_key = self.get_challenge_key(show_users.content)
+		self.challenge_key = get_challenge_key(show_users.content)
 		#  Post to add user and get challenge key
 		add_user_data = {
 			'view': 'showUsers',
@@ -136,7 +168,7 @@ class DeviceRegistration:
 			'filterText': '',
 			'showUsersAdd': 'Add',
 		}
-		self.challenge_key = self.get_challenge_key(session.post(self.request_url, data=add_user_data).content)
+		self.challenge_key = get_challenge_key(session.post(self.request_url, data=add_user_data).content)
 		# Post request to add new user
 		user_data = {
 			'firstName': '',
@@ -155,7 +187,17 @@ class DeviceRegistration:
 		}
 		session.post(self.request_url, data=user_data, headers=self.headers)
 
-	def add_device(self, session, user_id, username, mac_address, description, sponsor):
+	def add_device(self, session: object, user_id: object, username: object, mac_address: object, description: object, sponsor: object) -> object:
+		"""
+
+		:rtype: object
+		:param session:
+		:param user_id:
+		:param username:
+		:param mac_address:
+		:param description:
+		:param sponsor:
+		"""
 		pre_register_data = {
 			'view': 'showUsers',
 			'sort': 'userName',
@@ -167,7 +209,7 @@ class DeviceRegistration:
 			'showUsersAdd': 'Add',
 		}
 		pre_post = session.post('http://fsunac-1.framingham.edu/administration', data=pre_register_data)
-		self.challenge_key = self.get_challenge_key(pre_post.content)
+		self.challenge_key = get_challenge_key(pre_post.content)
 
 		register_data = {
 			'regUserName': f'{username}',
@@ -183,6 +225,20 @@ class DeviceRegistration:
 		print(register_device.status_code)
 
 
+def get_challenge_key(url_content: object) -> object:
+	"""
+
+	:rtype: object
+	:param url_content:
+	:return:
+	"""
+	soup = BeautifulSoup(url_content, 'lxml')
+	for element in soup.find_all('form'):
+		for key in element.find_all('input'):
+			if key['name'] == 'challengeKey':
+				return key['value']
+
+
 # Tests
 
 # Find mac address for user
@@ -190,5 +246,5 @@ class DeviceRegistration:
 DeviceRegistration().my_session(add_user=True, username='testdev')
 val, id_ = DeviceRegistration().my_session(search_user=True, username='testdev')
 print(id_)
-# To Add you must search first...for secret key
+# To Add you must search first...for secret key, and user_id
 DeviceRegistration().my_session(add_device=True, user_id=id_, username='testdev', mac_address='10:10:10:10:10:13', description='TestAdd', sponsor='SamTest')
