@@ -1,2 +1,2 @@
-# Device-Registration-Improved
-Improved, much faster version of Device-Registration
+# Device-Registration
+Automation of the manual addition of MAC addresses on Framingham State's  network.
