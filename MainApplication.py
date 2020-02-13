@@ -1,24 +1,24 @@
+import argparse
 import configparser
-import json
 import os
 import re
 import sys
 import webbrowser
-from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-import requests
-from PyQt5.QtCore import QObject, pyqtSignal, Qt, QRunnable, QSize, QThreadPool, pyqtSlot, QCoreApplication, QEventLoop
-from PyQt5.QtGui import QIcon, QMovie
+from PyQt5.QtCore import QObject, pyqtSignal, Qt, QRunnable, QSize, QThreadPool, pyqtSlot, QCoreApplication, QEventLoop, \
+	QTimer
+from PyQt5.QtGui import QIcon, QMovie, QFontDatabase, QPixmap
 from PyQt5.QtWidgets import QPushButton, QLineEdit, QLabel, QCheckBox, QGraphicsBlurEffect, \
 	QMenu, QMenuBar
-from bs4 import BeautifulSoup
-from modern_ui import styles
-from modern_ui import windows
 from qtpy import uic
 from qtpy.QtCore import Slot
 from qtpy.QtWidgets import QApplication, QMainWindow, QMessageBox
+
+import DeviceRegistration
+from modern_ui import styles
+from modern_ui import windows
 
 
 def resource_path(relative_path):
@@ -36,6 +36,7 @@ _logo = resource_path('purple_flame.svg')
 _config = resource_path(Path.home() / 'dev_config')
 _about = resource_path('about')
 _help = resource_path('help')
+_font = resource_path('Quicksand-Regular.otf')
 
 
 class Signals(QObject):
@@ -67,28 +68,31 @@ class RegisterThread(QRunnable):
 				self.signals.play_splash_signal.emit(True)
 				self.signals.label_update_signal.emit(f"Checking devices for {self.username}...")
 				self.signals.disable_widgets_signal.emit(True)
-				if DeviceRegistration().my_session(search_user=True, username=self.username)[0]:
-					user_id = DeviceRegistration().my_session(search_user=True, username=self.username)[1]
-					mac_address_list = DeviceRegistration().my_session(get_mac_address=True, username=self.username, user_id=user_id)
+				if DeviceRegistration.Register().my_session(search_user=True, username=self.username)[0]:
+					user_id = DeviceRegistration.Register().my_session(search_user=True, username=self.username)[1]
+					mac_address_list = DeviceRegistration.Register().my_session(get_mac_address=True, username=self.username,
+					                                                   user_id=user_id)
 					self.signals.disable_widgets_signal.emit(False)
 					self.signals.play_splash_signal.emit(False)
 					self.signals.label_update_signal.emit("Ready")
 					mac_string = f"""<h2><font color='DodgerBlue'>MAC Adresses for <strong>{self.username}</strong></font></h2>"""
 					if mac_address_list is not None:
 						for mac in mac_address_list:
-							mac_string += f"""<ul><li><strong><font size=5>{mac}</font></strong></li></ul>"""
+							mac_string += f"""<ul><li><strong><font size=5>{mac}</font+></strong></li></ul>"""
 
 						self.signals.popup_signal.emit(f"MAC Addresses for {self.username}", mac_string)
 					else:
 						self.signals.popup_signal.emit(f"MAC Addresses for {self.username}",
 						                               f"""<font size=5 color='MediumOrchid'>No devices registered for {self.username}</font>""")
 				else:
-					self.signals.popup_signal.emit("Error", f"""<h2><font color='Violet'>No such user {self.username}</font></h2>""")
+					self.signals.popup_signal.emit("Error",
+					                               f"""<h2><font color='Violet'>No such user {self.username}</font></h2>""")
 					self.signals.play_splash_signal.emit(False)
 					self.signals.label_update_signal.emit("Ready")
 					self.signals.disable_widgets_signal.emit(False)
 			else:
-				self.signals.popup_signal.emit("Error", f"""<h2><font color='MediumOrchid'>Please enter a username</font></h2>""")
+				self.signals.popup_signal.emit("Error",
+				                               f"""<h2><font color='MediumOrchid'>Please enter a username</font></h2>""")
 		else:
 			# Make dictionary to check whether format of text boxes are correct
 			everything = {
@@ -107,21 +111,28 @@ class RegisterThread(QRunnable):
 				self.signals.label_update_signal.emit("Starting...")
 				self.signals.disable_widgets_signal.emit(True)
 
-				if DeviceRegistration().my_session(search_user=True, username=self.username)[0]:
-					user_id = DeviceRegistration().my_session(search_user=True, username=self.username)[1]
+				if DeviceRegistration.Register().my_session(search_user=True, username=self.username)[0]:
+					user_id = DeviceRegistration.Register().my_session(search_user=True, username=self.username)[1]
 					self.signals.label_update_signal.emit("Adding device")
-					DeviceRegistration().my_session(add_device=True, username=self.username, mac_address=self.mac_address, user_id=user_id, description=self.device_type, sponsor=self.sponsor)
-					self.signals.popup_signal.emit("Success!", f"""<h2><font color='DodgerBlue'>Successfully added {self.mac_address}</font></h2>""")
+					DeviceRegistration.Register().my_session(add_device=True, username=self.username,
+					                                mac_address=self.mac_address, user_id=user_id,
+					                                description=self.device_type, sponsor=self.sponsor)
+					self.signals.popup_signal.emit("Success!",
+					                               f"""<h2><font color='DodgerBlue'>Successfully added {self.mac_address}</font></h2>""")
 					self.signals.play_splash_signal.emit(False)
 					self.signals.label_update_signal.emit("Ready")
 					self.signals.disable_widgets_signal.emit(False)
 					self.signals.clear_textboxes_signal.emit()
 				else:
 					self.signals.label_update_signal.emit(f"{self.username} not found creating new user")
-					DeviceRegistration().my_session(add_user=True, username=self.username, sponsor=self.sponsor)
-					new_search, new_id = DeviceRegistration().my_session(search_user=True, username=self.username)
-					DeviceRegistration().my_session(add_device=True, user_id=new_id, username=self.username, mac_address=self.mac_address, description=self.device_type, sponsor=self.sponsor)
-					self.signals.popup_signal.emit("Success!", f"""<font size=5 color='DodgerBlue'>Successfully added {self.mac_address}</font>""")
+					DeviceRegistration.Register().my_session(add_user=True, username=self.username, sponsor=self.sponsor)
+					new_search, new_id = DeviceRegistration.Register().my_session(search_user=True, username=self.username)
+					self.signals.label_update_signal.emit("Adding device")
+					DeviceRegistration.Register().my_session(add_device=True, user_id=new_id, username=self.username,
+					                                mac_address=self.mac_address, description=self.device_type,
+					                                sponsor=self.sponsor)
+					self.signals.popup_signal.emit("Success!",
+					                               f"""<font size=5 color='DodgerBlue'>Successfully added {self.mac_address}</font>""")
 					self.signals.play_splash_signal.emit(False)
 					self.signals.label_update_signal.emit("Ready")
 					self.signals.disable_widgets_signal.emit(False)
@@ -148,348 +159,21 @@ class RegisterThread(QRunnable):
 				self.signals.popup_signal.emit('Errors in your form', msg)
 
 
-class DeviceRegistration:
-	post_website: object
-
-	def __init__(self):
-		self.session = requests.Session()
-		self.login_url = 'http://fsunac-1.framingham.edu/j_security_check'
-		self.request_url = 'http://fsunac-1.framingham.edu/administration'
-		self.challenge_key = None
-		self.cookies = None
-		self.login()
-		self.headers = {
-			'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,'
-			          'application/signed-exchange;v=b3',
-			'Accept-Encoding': 'gzip, deflate',
-			'Accept-Language': 'en-US, en;q=0.9',
-			'Cache-Control': 'max-age=0',
-			'Connection': 'keep-alive',
-			'Content-Length': '196',
-			'Content-Type': 'application/x-www-form-urlencoded',
-			'DNT': '1',
-			'Host': 'fsunac-1.framingham.edu',
-			'Origin': 'http://fsunac-1.framingham.edu',
-			'Referer': 'http://fsunac-1.framingham.edu/screen_preview',
-			'Upgrade-Insecure-Requests': '1',
-			'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
-			              'Chrome/76.0.3809.132 Safari/537.36 '
-		}
-
-		self.data = {
-			'com.ets.orginal.request.method': 'GET',
-			'com.ets.orginal.request.URI': '/screen_preview',
-			'challengeKey': f'{self.challenge_key}',
-			'j_username': '',
-			'j_password': '',
-			'loginAuthenticate': 'false',
-			'login': 'Login'
-		}
-
-	def login(self):
-		with requests.Session() as session:
-			# Get cookie from response
-			website = session.get(self.request_url)
-			self.cookies = website.cookies
-			# Get challenge key!
-			source = website.content
-			self.challenge_key = get_challenge_key(source)
-
-	def my_session(self, get_mac_address: object = False, add_device: object = False, purge_devices: object = False,
-	               user_id: object = None,
-	               username: object = None,
-	               mac_address: object = None,
-	               add_user: object = False,
-	               search_user: object = False,
-	               description: object = None,
-	               sponsor: object = None) -> object:
-		"""
-
-		:rtype: object
-		:param get_mac_address:
-		:param add_device:
-		:param purge_devices:
-		:param user_id:
-		:param username:
-		:param mac_address:
-		:param add_user:
-		:param search_user:
-		:param description:
-		:param sponsor:
-		:return:
-		"""
-		with requests.Session() as session:
-			web = session.post(self.login_url, cookies=self.cookies, data=self.data, headers=self.headers)
-			self.challenge_key = get_challenge_key(web.content)
-			if get_mac_address:
-				return self.find_mac_address(session, username, user_id)
-			elif add_user:
-				return self.add_new_user(session, username, sponsor)
-			elif search_user:
-				return self.search(session, username)
-			elif add_device:
-				self.devices(session, user_id, username, mac_address=mac_address, description=description,
-				             sponsor=sponsor, add=True)
-			elif purge_devices:
-				self.devices(session, user_id, username, purge=True)
-
-	def search(self, session: object, username: object) -> object:
-		"""
-
-		:param session:
-		:param username:
-		:return:
-		:rtype: object
-		"""
-		user_info = []
-		search_user = session.get('http://fsunac-1.framingham.edu/administration?view=showUsers')
-		source = search_user.content
-		self.challenge_key = get_challenge_key(source)
-		user_data = {
-			'view': 'showUsers',
-			'sort': 'userName',
-			'sortDir': 'ASC',
-			'challengeKey': f'{self.challenge_key}',
-			'subview': 'http://fsunac-1.framingham.edu:80/administration?view=showUsersAll',
-			'filterText': f'{username}',
-			'filterTable': 'Apply'
-		}
-		result = session.post(self.request_url, data=user_data, headers=self.headers)
-		soup = BeautifulSoup(result.content, 'lxml')
-
-		for name in soup.find_all('a', href="#"):
-			if username in name:
-				user_info = name['onclick']
-				user_id = user_info.split()[2].replace("'", "").rstrip(',')
-				return True, user_id
-		return False, None
-
-	def find_mac_address(self, session: object, username: object, user_id) -> object:
-		"""
-
-		:rtype: object
-		:param session:
-		:param username:
-		:return:
-		"""
-		list_of_mac_addresses = []
-		user_data = {
-			'view': 'showDevicesAll',
-			'sort': 'userName',
-			'sortDir': 'ASC',
-			'subview': 'http://fsunac-1.framingham.edu:80/administration?view=showDevicesAll',
-			'filterText': f'{username}',
-			'filterTable': 'Apply'
-		}
-		user_info = session.post(self.request_url, data=user_data)
-		source_code = user_info.content
-		self.challenge_key = get_challenge_key(source_code)
-		view_devices_data = {
-			'view': 'showDevicesAll',
-			'sort': 'userName',
-			'sortDir': 'ASC',
-			'challengeKey': f'{self.challenge_key}',
-			'subview': 'http://fsunac-1.framingham.edu:80/administration?view=showDevicesAll',
-			'filterText': f'{username}',
-			'userId': f'{user_id}',
-			'showDevicesForUser': 'Devices For User'
-		}
-		view_devices = session.post(self.request_url, data=view_devices_data)
-		soup = BeautifulSoup(view_devices.content, 'lxml')
-		for mac_addr in soup.find_all('a', href="#"):
-			if re.match('[0-9a-f]{2}([-:]?)[0-9a-f]{2}(\\1[0-9a-f]{2}){4}$', mac_addr.text, re.IGNORECASE):
-				list_of_mac_addresses.append(mac_addr.text)
-
-		if len(list_of_mac_addresses) > 0:
-			return list_of_mac_addresses
-		else:
-			return None
-
-	def add_new_user(self, session: object, username: object, sponsor: object):
-		"""
-
-		:rtype: object
-		:param session:
-		:param username:
-		:param sponsor:
-		"""
-		current_date = datetime.now()
-		registration_start_date = f'{current_date.strftime("%m/%d/%Y")} 0:00:00'
-		registration_end_date = f"{current_date.strftime('%m')}/{current_date.strftime('%d')}/" \
-		                        f"{int(current_date.strftime('%Y')) + 2} 0:00:00"
-		# View all users to get challenge_key
-		show_users = session.get('http://fsunac-1.framingham.edu/administration?view=showUsers')
-		self.challenge_key = get_challenge_key(show_users.content)
-		#  Post to add user and get challenge key
-		add_user_data = {
-			'view': 'showUsers',
-			'sort': 'userName',
-			'sortDir': 'ASC',
-			'challengeKey': f'{self.challenge_key}',  # Not needed here for some reason
-			'subView': 'http://fsunac-1.framingham.edu:80/administration?view=showUsersAll',
-			'filterText': '',
-			'showUsersAdd': 'Add',
-		}
-		self.challenge_key = get_challenge_key(session.post(self.request_url, data=add_user_data).content)
-		# Post request to add new user
-		user_data = {
-			'firstName': '',
-			'middleName': '',
-			'lastName': '',
-			'regUserName': f'{username}',
-			'emailAddress': f'{username}@student.framingham.edu',
-			'phoneNumber': '',
-			'regStartTime': f'{registration_start_date}',
-			'regExpirationTime': f'{registration_end_date}',
-			'sponsorEmail': f'{sponsor}',
-			'userType': 'Web Authentication',
-			'userMaxDevice': '',
-			'challengeKey': f'{self.challenge_key}',
-			'addUser': 'Submit'
-		}
-		session.post(self.request_url, data=user_data, headers=self.headers)
-
-	def devices(self, session: object, user_id: object, username: object = None, mac_address: object = None,
-	            description: object = None, sponsor: object = None, add=None, purge=None):
-		"""
-
-		:rtype: object
-		:param session:
-		:param user_id:
-		:param username:
-		:param mac_address:
-		:param description:
-		:param sponsor:
-		:param purge:
-		:param add:
-		"""
-		pre_register_data = {
-			'view': 'showUsers',
-			'sort': 'userName',
-			'sortDir': 'ASC',
-			# 'challengeKey': f'{self.challenge_key}',  # Not need here for some reason
-			'subView': 'http://fsunac-1.framingham.edu:80/administration?view=showUsersAll',
-			'filterText': f'{username}',
-			'userId': f'{user_id}',
-			'showUsersAdd': 'Add',
-		}
-		pre_post = session.post('http://fsunac-1.framingham.edu/administration', data=pre_register_data)
-		self.challenge_key = get_challenge_key(pre_post.content)
-
-		register_data = {
-			'regUserName': f'{username}',
-			'macAddress': f'{mac_address}',
-			'deviceGroup': 'Registered Guests',
-			'devDesc': f'{description}',
-			'sponsorEmail': f'{sponsor}',
-			'challengeKey': f'{self.challenge_key}',
-			'addDevice': 'Submit',
-		}
-
-		if add:
-			session.post(self.request_url, data=register_data, headers=self.headers)
-		elif purge:
-			# TODO FIX PURGE. DOES NOT PURGE. MIGHT BE DUE TO CHALLENGEKEY -> MIGHT NEED TO SEARCH USER FIRST,
-			#  THEN GET CHALLENGE KEY FROM THAT
-			purge_data = [
-				('view', 'showUsers'),
-				('sort', 'userName'),
-				('sortDir', 'ASC'),
-				('challengeKey', f'{self.challenge_key}'),
-				('subView',
-				 f'http://fsunac-1.framingham.edu:80/administration?view=showDevicesForUser&regUserName={username}'),
-				('filterText', f'{username}'),
-				# ('select_all', ''),
-				# 'deviceId': '47262',
-				# 'deviceId': '47263',
-				('deleteDevice', 'Delete')
-			]
-
-			view_devices_data = {
-				'view': 'showDevicesAll',
-				'sort': 'userName',
-				'sortDir': 'ASC',
-				'challengeKey': f'{self.challenge_key}',
-				'subview': 'http://fsunac-1.framingham.edu:80/administration?view=showDevicesAll',
-				'filterText': f'{username}',
-				'userId': f'{user_id}',
-				'showDevicesForUser': 'Devices For User'
-			}
-			user_info = session.post(self.request_url, data=view_devices_data)
-			self.challenge_key = get_challenge_key(user_info.content)
-
-			soup = BeautifulSoup(user_info.content, 'lxml')
-			for mac_id in soup.find_all('input'):
-				if mac_id['name'] == 'deviceId':
-					mac_tuple = (mac_id['name'], mac_id['value'])
-					purge_data.append(mac_tuple)
-			# Make json string to hold duplicate keys (deviceId in purge_data)
-			new_purge_data = json.dumps(Container(purge_data))
-			session.post(self.request_url, data=new_purge_data)
-
-
-def get_challenge_key(url_content: object) -> object:
-	"""
-
-	:rtype: object
-	:param url_content:
-	:return:
-	"""
-	soup = BeautifulSoup(url_content, 'lxml')
-	for element in soup.find_all('form'):
-		for key in element.find_all('input'):
-			if key['name'] == 'challengeKey':
-				return key['value']
-
-
-class Container(dict):
-	"""Overload the items method to retain duplicate keys."""
-
-	def __init__(self, items):
-		super().__init__()
-		self[""] = ""
-		self._items = items
-
-	def items(self):
-		return self._items
-
-
 # Check to see if mac address is valid format eg. (00:00:00:00:00:000) or (00-00-00-00-00-00)
-def check_mac_address(mac_address: object) -> object:
-	"""
-
-	:param mac_address:
-	:return:
-	"""
+def check_mac_address(mac_address):
 	return bool(re.match('[0-9a-f]{2}([-:]?)[0-9a-f]{2}(\\1[0-9a-f]{2}){4}$', mac_address, re.IGNORECASE))
 
 
-# Check to see if username is correct format eg. (teststudent) or (teststudent45) but not (test student)
 def check_sponsor(your_name: object) -> object:
-	"""
-
-	:param your_name:
-	:return:
-	"""
 	return bool(re.match(r'[a-zA-Z]{1,}(.*[\s]?)', your_name, re.IGNORECASE))
 
 
 def check_email(email: object) -> object:
-	"""
-
-	:param email:
-	:return:
-	"""
 	return bool(re.match(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)", email, re.IGNORECASE))
 
 
-def check_username(username: object, other_user: object = False) -> object:
-	"""
-
-	:param username:
-	:param other_user:
-	:return:
-	"""
+# Check to see if username is correct format eg. (teststudent) or (teststudent45) but not (test student)
+def check_username(username, other_user=False):
 	if other_user:
 		return True
 	else:
@@ -518,14 +202,21 @@ class MainWindow(QMainWindow):
 		self.ui = uic.loadUi(_UI, self)
 		self.config = configparser.RawConfigParser()
 		self.center()
+		self.parser = argparse.ArgumentParser(description=__doc__,
+		                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 		self.mw = windows.ModernWindow(self)
 		self.initUI()
 		self.init_config()
 
-	def initUI(self) -> object:
+	def initUI(self):
 		self.setWindowIcon(QIcon(_logo))
 		self.dark_mode_icon = QIcon(resource_path('night_mode.ico'))
 		self.light_mode_icon = QIcon(resource_path('light_mode.ico'))
+		self.ui.user_label.setPixmap(QPixmap(resource_path('user_ico')))
+		self.ui.mac_label.setPixmap(QPixmap(resource_path('mac_ico')))
+		self.ui.device_label_2.setPixmap(QPixmap(resource_path('device_ico')))
+		self.ui.sponsor_label_2.setPixmap(QPixmap(resource_path('name_ico')))
+		self.ui.check_devices_button.setToolTip("<i><b>Check user's devices</b></i>")
 		self.ui.actionAbout.triggered.connect(self.show_about)
 		self.ui.actionHelp.triggered.connect(self.show_help)
 		self.ui.actionAdd_user_using_website.triggered.connect(
@@ -535,6 +226,8 @@ class MainWindow(QMainWindow):
 		self.ui.faculty_checkbox.stateChanged.connect(self.on_state_change)
 		self.ui.other_checkbox.stateChanged.connect(self.on_state_change)
 		self.user_type = 'student'
+		self.ui.register_button.setIcon(QIcon('reg.png'))
+		self.setStyleSheet(open('modern_ui/style.qss', 'r').read())
 		self.mw.show()
 
 	def init_config(self):
@@ -550,11 +243,14 @@ class MainWindow(QMainWindow):
 						self.ui.change_mode.setIcon(self.light_mode_icon)
 						styles.dark_mode(QApplication.instance())
 						self.ui.change_mode.setToolTip("<i><b>Light Mode</b></i>")
+						self.setStyleSheet('')
 					else:
 						self.ui.change_mode.setIconSize(QSize(25, 25))
 						self.ui.change_mode.setIcon(self.dark_mode_icon)
 						styles.light_mode(QApplication.instance())
 						self.ui.change_mode.setToolTip("<i><b>Dark Mode</b></i>")
+						self.parser.add_argument('--no_dark', action='store_true')
+						self.setStyleSheet('')
 				else:
 					raise FileNotFoundError
 		except FileNotFoundError:
@@ -571,11 +267,14 @@ class MainWindow(QMainWindow):
 			with open(_config, 'w') as config_file:
 				self.config.write(config_file)
 
-	def disable_widgets(self, bool_val: object) -> object:
-		"""
+	def fade(self):
+		self.setWindowOpacity(0.2)
+		QTimer.singleShot(30, self.unfade)
 
-		:param bool_val:
-		"""
+	def unfade(self):
+		self.setWindowOpacity(1)
+
+	def disable_widgets(self, bool_val):
 		objects = [QPushButton, QLineEdit, QMenu, QMenuBar]
 		for item in objects:
 			for child in self.findChildren(item):
@@ -584,39 +283,42 @@ class MainWindow(QMainWindow):
 				else:
 					child.setEnabled(True)
 
-	def other_checked(self, other_checked: object = True) -> object:
-		"""
-
-		:param other_checked:
-		"""
+	def other_checked(self, other_checked=True):
 		if other_checked:
 			self.ui.username_label.setText(
 				'<html><head/><body><p><span style=" color:#ff0000;">*</span>Full Name</p></body></html>')
 			self.ui.progress_label.move(10, 355)
 			self.ui.register_button.move(230, 320)
-			self.ui.sponsor_label.setGeometry(95, 265, 151, 41)
+			self.ui.sponsor_label.setGeometry(70, 265, 151, 41)
+			self.ui.sponsor_label_2.setGeometry(10, 270, 41, 41)
 			self.ui.sponsor_textbox.move(250, 278)
 
 			self.email_label = QLabel('<html><head/><body><p><span style=" color:#ff0000;">*</span>User '
 			                          'Email</p></body></html>', self)
 			self.email_label.setStyleSheet('font: 16pt "Verdana";')
-			self.email_label.setGeometry(94, 230, 151, 61)
+			self.email_label.setGeometry(67, 230, 195, 61)
 			self.email_textbox = QLineEdit(self)
+			self.email_label_2 = QLabel(self)
+			self.email_label_2.setGeometry(10, 240, 41, 41)
+			self.email_label_2.setPixmap(QPixmap(resource_path('email_ico')))
 			self.email_textbox.setGeometry(250, 250, 221, 21)
 			self.email_textbox.setStyleSheet('font: 11pt "Verdana";')
 			self.setTabOrder(self.ui.device_textbox, self.ui.email_textbox)
 			self.ui.email_textbox.returnPressed.connect(lambda: self.ui.register_button.animateClick())
 			self.email_label.show()
 			self.email_textbox.show()
+			self.email_label_2.show()
 		else:
 			try:
 				self.ui.username_label.setText(
 					'<html><head/><body><p><span style=" color:#ff0000;">*</span>Username</p></body></html>')
 				self.email_textbox.deleteLater()
 				self.email_label.deleteLater()
+				self.email_label_2.deleteLater()
 				self.ui.progress_label.move(10, 330)
 				self.ui.register_button.move(230, 280)
-				self.ui.sponsor_label.setGeometry(95, 220, 151, 41)
+				self.ui.sponsor_label.setGeometry(70, 220, 151, 41)
+				self.ui.sponsor_label_2.setGeometry(10, 220, 41, 41)
 				self.ui.sponsor_textbox.move(250, 230)
 			except AttributeError:
 				pass
@@ -624,11 +326,7 @@ class MainWindow(QMainWindow):
 				pass
 
 	@pyqtSlot(int)
-	def on_state_change(self, state: object) -> object:
-		"""
-
-		:param state:
-		"""
+	def on_state_change(self, state):
 		if state == Qt.Checked:
 			if self.sender() == self.ui.student_checkbox:
 				self.other_checked(other_checked=False)
@@ -650,12 +348,8 @@ class MainWindow(QMainWindow):
 				self.ui.student_checkbox.setChecked(True)
 
 	# Function to display an error if we get one
-	def popup_msg(self, title: object, message: object) -> object:
-		"""
+	def popup_msg(self, title, message):
 
-		:param title:
-		:param message:
-		"""
 		QMessageBox.about(self, title, message)
 
 	# Center our application instead of putting it in the top left
@@ -666,11 +360,7 @@ class MainWindow(QMainWindow):
 		frame_gm.moveCenter(center_point)
 		self.move(frame_gm.topLeft())
 
-	def clear_textboxes(self, sponsor: object = False):
-		"""
-
-		:param sponsor:
-		"""
+	def clear_textboxes(self, sponsor=False):
 		self.ui.username_textbox.clear()
 		self.ui.mac_textbox.clear()
 		self.ui.device_textbox.clear()
@@ -686,6 +376,7 @@ class MainWindow(QMainWindow):
 	def change_ui(self):
 		with open(_config, 'r'):
 			if self.config.getboolean('Default', 'dark_mode'):
+				self.fade()
 				styles.light_mode(QApplication.instance())
 				self.ui.change_mode.setIcon(self.dark_mode_icon)
 				self.ui.change_mode.setIconSize(QSize(25, 25))
@@ -694,6 +385,7 @@ class MainWindow(QMainWindow):
 					self.config['Default']['dark_mode'] = 'false'
 					self.config.write(config)
 			else:
+				self.fade()
 				styles.dark_mode(QApplication.instance())
 				self.ui.change_mode.setIcon(self.light_mode_icon)
 				self.ui.change_mode.setIconSize(QSize(35, 35))
@@ -717,11 +409,8 @@ class MainWindow(QMainWindow):
 	def on_change_mode_clicked(self):
 		self.change_ui()
 
-	def play_splash(self, bool_val: object):
-		"""
+	def play_splash(self, bool_val):
 
-		:param bool_val:
-		"""
 		def blur_objects(blur=True):
 			objects = [QLabel, QPushButton, QLineEdit, QCheckBox, QMenu, QMenuBar]
 
@@ -755,10 +444,10 @@ class MainWindow(QMainWindow):
 	@Slot()
 	def on_register_button_clicked(self):
 		# Get the texts entered in the textbox and pass them to the thread
-		self.username = self.ui.username_textbox.text()
-		self.mac_address = self.ui.mac_textbox.text()
-		self.device_type = self.ui.device_textbox.text()
-		self.sponsor = self.ui.sponsor_textbox.text()
+		self.username = self.ui.username_textbox.text().strip()
+		self.mac_address = self.ui.mac_textbox.text().strip()
+		self.device_type = self.ui.device_textbox.text().strip()
+		self.sponsor = self.ui.sponsor_textbox.text().strip()
 
 		if self.user_type == 'other':
 			self.registration_thread = RegisterThread(self.username, self.mac_address, self.device_type, self.sponsor,
@@ -774,6 +463,18 @@ class MainWindow(QMainWindow):
 
 		self.thread_pool.start(self.registration_thread)
 
+	@Slot()
+	def on_check_devices_button_clicked(self):
+		self.username = self.ui.username_textbox.text()
+		self.registration_thread = RegisterThread(username=self.username, user_check=True)
+
+		self.registration_thread.signals.clear_textboxes_signal.connect(self.clear_textboxes)
+		self.registration_thread.signals.disable_widgets_signal.connect(self.disable_widgets)
+		self.registration_thread.signals.popup_signal.connect(self.popup_msg)
+		self.registration_thread.signals.label_update_signal.connect(self.update_label)
+		self.registration_thread.signals.play_splash_signal.connect(self.play_splash)
+		self.thread_pool.start(self.registration_thread)
+
 	# If the user clicks the red button to exit the window
 	@Slot()
 	def closeEvent(self, event):
@@ -786,6 +487,7 @@ class MainWindow(QMainWindow):
 
 if __name__ == '__main__':
 	app = QApplication(sys.argv)
+	QFontDatabase.addApplicationFont(_font)
 	app.setStyle('Fusion')
 	window = MainWindow()
 	sys.exit(app.exec_())

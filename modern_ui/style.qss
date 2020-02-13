@@ -1,0 +1,131 @@
+QMainWindow{
+    font-family: Quicksand-Regular;
+}
+
+QPushButton{
+  border-radius: 4px;
+  padding: 3px;
+  outline: none;
+}
+
+QPushButton:disabled {
+  background-color: #32414B;
+  border: 1px solid #32414B;
+  color: #787878;
+  border-radius: 4px;
+  padding: 3px;
+}
+
+QPushButton:checked {
+  background-color: #32414B;
+  border: 1px solid #32414B;
+  border-radius: 4px;
+  padding: 3px;
+  outline: none;
+}
+
+QPushButton:checked:disabled {
+  background-color: #19232D;
+  border: 1px solid #32414B;
+  color: #787878;
+  border-radius: 4px;
+  padding: 3px;
+  outline: none;
+}
+
+QPushButton:checked:selected {
+  background: #1464A0;
+  color: #32414B;
+}
+
+QPushButton:checked:hover {
+  border: 1px solid #148CD2;
+  color: #F0F0F0;
+}
+
+QPushButton::menu-indicator {
+  subcontrol-origin: padding;
+  subcontrol-position: bottom right;
+  bottom: 4px;
+}
+
+QPushButton:pressed {
+  background-color: #19232D;
+  border: 1px solid #19232D;
+}
+
+QPushButton:pressed:hover {
+  border: 1px solid #148CD2;
+}
+
+QPushButton:hover {
+  border: 1px solid #148CD2;
+  color: #F0F0F0;
+}
+
+QPushButton:selected {
+  background: #1464A0;
+  color: #32414B;
+}
+
+QCheckBox {
+  background-color: #19232D;
+  color: #F0F0F0;
+  spacing: 4px;
+  outline: none;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+QCheckBox:focus {
+  border: none;
+}
+
+QCheckBox QWidget:disabled {
+  background-color: #19232D;
+  color: #787878;
+}
+
+QCheckBox::indicator {
+  margin-left: 4px;
+  height: 16px;
+  width: 16px;
+}
+
+QCheckBox::indicator:unchecked {
+  image: url(":/qss_icons/rc/checkbox_unchecked.png");
+}
+
+QCheckBox::indicator:unchecked:hover, QCheckBox::indicator:unchecked:focus, QCheckBox::indicator:unchecked:pressed {
+  border: none;
+  image: url(":/qss_icons/rc/checkbox_unchecked_focus.png");
+}
+
+QCheckBox::indicator:unchecked:disabled {
+  image: url(":/qss_icons/rc/checkbox_unchecked_disabled.png");
+}
+
+QCheckBox::indicator:checked {
+  image: url(":/qss_icons/rc/checkbox_checked.png");
+}
+
+QCheckBox::indicator:checked:hover, QCheckBox::indicator:checked:focus, QCheckBox::indicator:checked:pressed {
+  border: none;
+  image: url(":/qss_icons/rc/checkbox_checked_focus.png");
+}
+
+QCheckBox::indicator:checked:disabled {
+  image: url(":/qss_icons/rc/checkbox_checked_disabled.png");
+}
+
+QCheckBox::indicator:indeterminate {
+  image: url(":/qss_icons/rc/checkbox_indeterminate.png");
+}
+
+QCheckBox::indicator:indeterminate:disabled {
+  image: url(":/qss_icons/rc/checkbox_indeterminate_disabled.png");
+}
+
+QCheckBox::indicator:indeterminate:focus, QCheckBox::indicator:indeterminate:hover, QCheckBox::indicator:indeterminate:pressed {
+  image: url(":/qss_icons/rc/checkbox_indeterminate_focus.png");
+}
