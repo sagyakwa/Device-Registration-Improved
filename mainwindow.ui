@@ -6,9 +6,12 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>600</width>
+    <width>522</width>
     <height>474</height>
    </rect>
+  </property>
+  <property name="cursor">
+   <cursorShape>ArrowCursor</cursorShape>
   </property>
   <property name="windowTitle">
    <string>Device Registration</string>
@@ -37,10 +40,11 @@
      <bool>true</bool>
     </property>
     <property name="styleSheet">
-     <string notr="true">font: 12pt &quot;MS Shell Dlg 2&quot;;</string>
+     <string notr="true">font: 12pt &quot;MS Shell Dlg 2&quot;;
+</string>
     </property>
     <property name="text">
-     <string>Register</string>
+     <string> Register</string>
     </property>
    </widget>
    <widget class="QLineEdit" name="username_textbox">
@@ -49,11 +53,13 @@
       <x>250</x>
       <y>80</y>
       <width>221</width>
-      <height>21</height>
+      <height>25</height>
      </rect>
     </property>
     <property name="styleSheet">
-     <string notr="true">font: 11pt &quot;Verdana&quot;;</string>
+     <string notr="true">font: 11pt &quot;Verdana&quot;;
+
+</string>
     </property>
     <property name="inputMethodHints">
      <set>Qt::ImhLowercaseOnly</set>
@@ -65,7 +71,7 @@
       <x>250</x>
       <y>130</y>
       <width>221</width>
-      <height>21</height>
+      <height>25</height>
      </rect>
     </property>
     <property name="styleSheet">
@@ -78,7 +84,7 @@
       <x>250</x>
       <y>180</y>
       <width>221</width>
-      <height>21</height>
+      <height>25</height>
      </rect>
     </property>
     <property name="styleSheet">
@@ -91,7 +97,7 @@
       <x>250</x>
       <y>230</y>
       <width>221</width>
-      <height>21</height>
+      <height>25</height>
      </rect>
     </property>
     <property name="styleSheet">
@@ -136,9 +142,9 @@
    <widget class="QLabel" name="username_label">
     <property name="geometry">
      <rect>
-      <x>100</x>
-      <y>70</y>
-      <width>131</width>
+      <x>76</x>
+      <y>71</y>
+      <width>141</width>
       <height>41</height>
      </rect>
     </property>
@@ -155,9 +161,9 @@
    <widget class="QLabel" name="mac_address_label">
     <property name="geometry">
      <rect>
-      <x>80</x>
-      <y>120</y>
-      <width>151</width>
+      <x>49</x>
+      <y>121</y>
+      <width>161</width>
       <height>41</height>
      </rect>
     </property>
@@ -174,11 +180,14 @@
    <widget class="QLabel" name="device_label">
     <property name="geometry">
      <rect>
-      <x>100</x>
+      <x>70</x>
       <y>170</y>
       <width>151</width>
       <height>41</height>
      </rect>
+    </property>
+    <property name="cursor">
+     <cursorShape>ArrowCursor</cursorShape>
     </property>
     <property name="styleSheet">
      <string notr="true">font: 16pt &quot;Verdana&quot;;</string>
@@ -193,9 +202,9 @@
    <widget class="QLabel" name="sponsor_label">
     <property name="geometry">
      <rect>
-      <x>94</x>
-      <y>219</y>
-      <width>131</width>
+      <x>70</x>
+      <y>220</y>
+      <width>141</width>
       <height>41</height>
      </rect>
     </property>
@@ -212,10 +221,10 @@
    <widget class="QLabel" name="instruction_label">
     <property name="geometry">
      <rect>
-      <x>480</x>
-      <y>0</y>
+      <x>470</x>
+      <y>-10</y>
       <width>131</width>
-      <height>21</height>
+      <height>41</height>
      </rect>
     </property>
     <property name="styleSheet">
@@ -294,6 +303,74 @@
      <bool>false</bool>
     </property>
    </widget>
+   <widget class="QPushButton" name="check_devices_button">
+    <property name="geometry">
+     <rect>
+      <x>480</x>
+      <y>80</y>
+      <width>38</width>
+      <height>25</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font: 63 8pt &quot;Yu Gothic UI Semibold&quot;;</string>
+    </property>
+    <property name="text">
+     <string>Check</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="user_label">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>75</y>
+      <width>31</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QLabel" name="mac_label">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>125</y>
+      <width>31</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QLabel" name="device_label_2">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>182</y>
+      <width>21</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QLabel" name="sponsor_label_2">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>220</y>
+      <width>41</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
    <zorder>username_textbox</zorder>
    <zorder>register_button</zorder>
    <zorder>mac_textbox</zorder>
@@ -309,13 +386,18 @@
    <zorder>student_checkbox</zorder>
    <zorder>faculty_checkbox</zorder>
    <zorder>other_checkbox</zorder>
+   <zorder>check_devices_button</zorder>
+   <zorder>user_label</zorder>
+   <zorder>mac_label</zorder>
+   <zorder>device_label_2</zorder>
+   <zorder>sponsor_label_2</zorder>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>600</width>
+     <width>522</width>
      <height>21</height>
     </rect>
    </property>
