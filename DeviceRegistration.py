@@ -6,7 +6,7 @@ import requests
 from bs4 import BeautifulSoup
 
 
-class DeviceRegistration:
+class Register:
 	post_website: object
 
 	def __init__(self):
@@ -99,7 +99,6 @@ class DeviceRegistration:
 		:return:
 		:rtype: object
 		"""
-		user_info = []
 		search_user = session.get('http://fsunac-1.framingham.edu/administration?view=showUsers')
 		source = search_user.content
 		self.challenge_key = get_challenge_key(source)
@@ -247,7 +246,7 @@ class DeviceRegistration:
 		if add:
 			session.post(self.request_url, data=register_data, headers=self.headers)
 		elif purge:
-			# TODO FIX PURGE. DOES NOT PURGE. MIGHT BE DUE TO CHALLENGEKEY -> MIGHT NEED TO SEARCH USER FIRST,
+			# TODO: FIX PURGE. DOES NOT PURGE. MIGHT BE DUE TO CHALLENGEKEY -> MIGHT NEED TO SEARCH USER FIRST,
 			#  THEN GET CHALLENGE KEY FROM THAT
 			purge_data = [
 				('view', 'showUsers'),
@@ -298,6 +297,7 @@ class Container(dict):
 		return self._items
 
 
+# Function to get challenge key for our data param
 def get_challenge_key(url_content: object) -> object:
 	"""
 
