@@ -68,9 +68,9 @@ class RegisterThread(QRunnable):
 				self.signals.play_splash_signal.emit(True)
 				self.signals.label_update_signal.emit(f"Checking devices for {self.username}...")
 				self.signals.disable_widgets_signal.emit(True)
-				if DeviceRegistration().my_session(search_user=True, username=self.username)[0]:
-					user_id = DeviceRegistration().my_session(search_user=True, username=self.username)[1]
-					mac_address_list = DeviceRegistration().my_session(get_mac_address=True, username=self.username,
+				if DeviceRegistration.Register().my_session(search_user=True, username=self.username)[0]:
+					user_id = DeviceRegistration.Register().my_session(search_user=True, username=self.username)[1]
+					mac_address_list = DeviceRegistration.Register().my_session(get_mac_address=True, username=self.username,
 					                                                   user_id=user_id)
 					self.signals.disable_widgets_signal.emit(False)
 					self.signals.play_splash_signal.emit(False)
@@ -111,10 +111,10 @@ class RegisterThread(QRunnable):
 				self.signals.label_update_signal.emit("Starting...")
 				self.signals.disable_widgets_signal.emit(True)
 
-				if DeviceRegistration().my_session(search_user=True, username=self.username)[0]:
-					user_id = DeviceRegistration().my_session(search_user=True, username=self.username)[1]
+				if DeviceRegistration.Register().my_session(search_user=True, username=self.username)[0]:
+					user_id = DeviceRegistration.Register().my_session(search_user=True, username=self.username)[1]
 					self.signals.label_update_signal.emit("Adding device")
-					DeviceRegistration().my_session(add_device=True, username=self.username,
+					DeviceRegistration.Register().my_session(add_device=True, username=self.username,
 					                                mac_address=self.mac_address, user_id=user_id,
 					                                description=self.device_type, sponsor=self.sponsor)
 					self.signals.popup_signal.emit("Success!",
@@ -125,10 +125,10 @@ class RegisterThread(QRunnable):
 					self.signals.clear_textboxes_signal.emit()
 				else:
 					self.signals.label_update_signal.emit(f"{self.username} not found creating new user")
-					DeviceRegistration().my_session(add_user=True, username=self.username, sponsor=self.sponsor)
-					new_search, new_id = DeviceRegistration().my_session(search_user=True, username=self.username)
+					DeviceRegistration.Register().my_session(add_user=True, username=self.username, sponsor=self.sponsor)
+					new_search, new_id = DeviceRegistration.Register().my_session(search_user=True, username=self.username)
 					self.signals.label_update_signal.emit("Adding device")
-					DeviceRegistration().my_session(add_device=True, user_id=new_id, username=self.username,
+					DeviceRegistration.Register().my_session(add_device=True, user_id=new_id, username=self.username,
 					                                mac_address=self.mac_address, description=self.device_type,
 					                                sponsor=self.sponsor)
 					self.signals.popup_signal.emit("Success!",
