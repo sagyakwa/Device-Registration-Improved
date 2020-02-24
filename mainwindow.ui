@@ -429,6 +429,8 @@
      <string>Tools</string>
     </property>
     <addaction name="actionCheck_device_for_current_user"/>
+    <addaction name="separator"/>
+    <addaction name="actionCheck_History"/>
    </widget>
    <addaction name="menuMenu"/>
    <addaction name="menuEdit"/>
@@ -479,6 +481,11 @@
   <action name="actionCheck_device_for_current_user">
    <property name="text">
     <string>Check devices for current user</string>
+   </property>
+  </action>
+  <action name="actionCheck_History">
+   <property name="text">
+    <string>Check History</string>
    </property>
   </action>
  </widget>

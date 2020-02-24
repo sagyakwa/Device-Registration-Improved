@@ -6,6 +6,7 @@ import sys
 import webbrowser
 from pathlib import Path
 from typing import Optional
+import datetime
 
 from PyQt5.QtCore import QObject, pyqtSignal, Qt, QRunnable, QSize, QThreadPool, pyqtSlot, QCoreApplication, QEventLoop, \
 	QTimer
@@ -34,6 +35,7 @@ _UI = resource_path('mainwindow.ui')
 _MAC_UI = resource_path('second_window.ui')
 _logo = resource_path('purple_flame.svg')
 _config = resource_path(Path.home() / 'dev_config')
+_history = resource_path(Path.home() / 'history')
 _about = resource_path('about')
 _help = resource_path('help')
 _font = resource_path('Quicksand-Regular.otf')
@@ -70,8 +72,9 @@ class RegisterThread(QRunnable):
 				self.signals.disable_widgets_signal.emit(True)
 				if DeviceRegistration.Register().my_session(search_user=True, username=self.username)[0]:
 					user_id = DeviceRegistration.Register().my_session(search_user=True, username=self.username)[1]
-					mac_address_list = DeviceRegistration.Register().my_session(get_mac_address=True, username=self.username,
-					                                                   user_id=user_id)
+					mac_address_list = DeviceRegistration.Register().my_session(get_mac_address=True,
+					                                                            username=self.username,
+					                                                            user_id=user_id)
 					self.signals.disable_widgets_signal.emit(False)
 					self.signals.play_splash_signal.emit(False)
 					self.signals.label_update_signal.emit("Ready")
@@ -115,8 +118,8 @@ class RegisterThread(QRunnable):
 					user_id = DeviceRegistration.Register().my_session(search_user=True, username=self.username)[1]
 					self.signals.label_update_signal.emit("Adding device")
 					DeviceRegistration.Register().my_session(add_device=True, username=self.username,
-					                                mac_address=self.mac_address, user_id=user_id,
-					                                description=self.device_type, sponsor=self.sponsor)
+					                                         mac_address=self.mac_address, user_id=user_id,
+					                                         description=self.device_type, sponsor=self.sponsor)
 					self.signals.popup_signal.emit("Success!",
 					                               f"""<h2><font color='DodgerBlue'>Successfully added {self.mac_address}</font></h2>""")
 					self.signals.play_splash_signal.emit(False)
@@ -125,12 +128,14 @@ class RegisterThread(QRunnable):
 					self.signals.clear_textboxes_signal.emit()
 				else:
 					self.signals.label_update_signal.emit(f"{self.username} not found creating new user")
-					DeviceRegistration.Register().my_session(add_user=True, username=self.username, sponsor=self.sponsor)
-					new_search, new_id = DeviceRegistration.Register().my_session(search_user=True, username=self.username)
+					DeviceRegistration.Register().my_session(add_user=True, username=self.username,
+					                                         sponsor=self.sponsor)
+					new_search, new_id = DeviceRegistration.Register().my_session(search_user=True,
+					                                                              username=self.username)
 					self.signals.label_update_signal.emit("Adding device")
 					DeviceRegistration.Register().my_session(add_device=True, user_id=new_id, username=self.username,
-					                                mac_address=self.mac_address, description=self.device_type,
-					                                sponsor=self.sponsor)
+					                                         mac_address=self.mac_address, description=self.device_type,
+					                                         sponsor=self.sponsor)
 					self.signals.popup_signal.emit("Success!",
 					                               f"""<font size=5 color='DodgerBlue'>Successfully added {self.mac_address}</font>""")
 					self.signals.play_splash_signal.emit(False)
@@ -161,7 +166,7 @@ class RegisterThread(QRunnable):
 
 # Check to see if mac address is valid format eg. (00:00:00:00:00:000) or (00-00-00-00-00-00)
 def check_mac_address(mac_address):
-	return bool(re.match('[0-9a-f]{2}([-:]?)[0-9a-f]{2}(\\1[0-9a-f]{2}){4}$', mac_address, re.IGNORECASE))
+	return bool(re.match(r'(?:^|[^-])((?:[0-9a-f]{2}[:-]){5}[0-9a-f]{2})(?:$|[^-])', mac_address, re.IGNORECASE))
 
 
 def check_sponsor(your_name: object) -> object:
@@ -267,6 +272,19 @@ class MainWindow(QMainWindow):
 			with open(_config, 'w') as config_file:
 				self.config.write(config_file)
 
+	@staticmethod
+	def write_to_history(self, username, mac_address, device_type, current_time):
+		with open(_history, 'a') as history_file:
+			time_registered = datetime.datetime.now().strftime("%m/%d/%Y %I:%M %p")
+			history_file.write(f"""<font size='10' color='blue'>[{time_registered}] ({current_time} ago)</font>\nUsername: {username}\t\nMac Address: {mac_address}\t\t\nDevice Type: {device_type}\t\n\n""")
+
+	def read_history(self):
+		try:
+			with open(_history, 'r') as history_file:
+				self.popup_msg("History", history_file.read())
+		except FileNotFoundError:
+			self.popup_msg("History", "No history to display")
+
 	def fade(self):
 		self.setWindowOpacity(0.2)
 		QTimer.singleShot(30, self.unfade)
@@ -349,7 +367,6 @@ class MainWindow(QMainWindow):
 
 	# Function to display an error if we get one
 	def popup_msg(self, title, message):
-
 		QMessageBox.about(self, title, message)
 
 	# Center our application instead of putting it in the top left
@@ -442,12 +459,18 @@ class MainWindow(QMainWindow):
 		self.thread_pool.start(self.registration_thread)
 
 	@Slot()
+	def on_actionCheck_History_triggered(self):
+		self.read_history()
+
+	@Slot()
 	def on_register_button_clicked(self):
 		# Get the texts entered in the textbox and pass them to the thread
 		self.username = self.ui.username_textbox.text().strip()
 		self.mac_address = self.ui.mac_textbox.text().strip()
 		self.device_type = self.ui.device_textbox.text().strip()
 		self.sponsor = self.ui.sponsor_textbox.text().strip()
+
+		self.write_to_history(self.username, self.mac_address, self.device_type, datetime.datetime.now().hour)
 
 		if self.user_type == 'other':
 			self.registration_thread = RegisterThread(self.username, self.mac_address, self.device_type, self.sponsor,
