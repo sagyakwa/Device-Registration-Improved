@@ -224,7 +224,7 @@ class Register:
 			'view': 'showUsers',
 			'sort': 'userName',
 			'sortDir': 'ASC',
-			# 'challengeKey': f'{self.challenge_key}',  # Not need here for some reason
+			'challengeKey': f'{self.challenge_key}',
 			'subView': 'http://fsunac-1.framingham.edu:80/administration?view=showUsersAll',
 			'filterText': f'{username}',
 			'userId': f'{user_id}',
