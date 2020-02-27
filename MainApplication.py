@@ -1,15 +1,15 @@
 import argparse
 import configparser
+import datetime
 import os
 import re
 import sys
 import webbrowser
 from pathlib import Path
 from typing import Optional
-import datetime
 
-from PyQt5.QtCore import QObject, pyqtSignal, Qt, QRunnable, QSize, QThreadPool, pyqtSlot, QCoreApplication, QEventLoop, \
-	QTimer
+from PyQt5.QtCore import QObject, pyqtSignal, Qt, QRunnable, QSize, QThreadPool, pyqtSlot, QCoreApplication, \
+	QEventLoop, QTimer
 from PyQt5.QtGui import QIcon, QMovie, QFontDatabase, QPixmap
 from PyQt5.QtWidgets import QPushButton, QLineEdit, QLabel, QCheckBox, QGraphicsBlurEffect, \
 	QMenu, QMenuBar
@@ -35,7 +35,7 @@ _UI = resource_path('mainwindow.ui')
 _MAC_UI = resource_path('second_window.ui')
 _logo = resource_path('purple_flame.svg')
 _config = resource_path(Path.home() / 'dev_config')
-_history = resource_path(Path.home() / 'history')
+_history = resource_path(Path.home() / 'device_registration_history')
 _about = resource_path('about')
 _help = resource_path('help')
 _font = resource_path('Quicksand-Regular.otf')
@@ -47,6 +47,35 @@ class Signals(QObject):
 	clear_textboxes_signal = pyqtSignal()
 	disable_widgets_signal = pyqtSignal(bool)
 	play_splash_signal = pyqtSignal(bool)
+
+
+class FancyDateTimeDelta(object):
+	"""
+	Format the date / time difference between the supplied date and
+	the current time using approximate measurement boundaries
+	"""
+
+	def __init__(self, dt):
+		now = datetime.datetime.now()
+		delta = now - dt
+		self.year = delta.days / 365
+		self.month = delta.days / 30 - (12 * self.year)
+		if self.year > 0:
+			self.day = 0
+		else:
+			self.day = delta.days % 30
+		self.hour = delta.seconds / 3600
+		self.minute = delta.seconds / 60 - (60 * self.hour)
+
+	def format(self):
+		fmt = []
+		for period in ['year', 'month', 'day', 'hour', 'minute']:
+			value = getattr(self, period)
+			if value:
+				if value > 1:
+					period += "s"
+				fmt.append("%s %s" % (value, period))
+		return ", ".join(fmt) + " ago"
 
 
 class RegisterThread(QRunnable):
@@ -203,6 +232,8 @@ class MainWindow(QMainWindow):
 
 	def __init__(self):
 		super(MainWindow, self).__init__()
+		self.QMessageBox = QMessageBox
+		self.QHistoryBox = QMessageBox
 		self.thread_pool = QThreadPool()
 		self.ui = uic.loadUi(_UI, self)
 		self.config = configparser.RawConfigParser()
@@ -273,17 +304,28 @@ class MainWindow(QMainWindow):
 				self.config.write(config_file)
 
 	@staticmethod
-	def write_to_history(self, username, mac_address, device_type, current_time):
+	def write_to_history(username, mac_address, device_type):
 		with open(_history, 'a') as history_file:
 			time_registered = datetime.datetime.now().strftime("%m/%d/%Y %I:%M %p")
-			history_file.write(f"""<font size='10' color='blue'>[{time_registered}] ({current_time} ago)</font>\nUsername: {username}\t\nMac Address: {mac_address}\t\t\nDevice Type: {device_type}\t\n\n""")
+			history_file.write(
+				f"""<font size='5' color='#6B9BF4'>[{time_registered}]</font>
+<font size='5'>Username: </font><font color='DodgerBlue' size='5'>{username}</font>
+<font size='5'>Mac Address: <font color='DodgerBlue' size='5'>{mac_address}</font></font>
+<font size='4'>Device Type: {device_type}</font>
+
+""")
 
 	def read_history(self):
 		try:
 			with open(_history, 'r') as history_file:
-				self.popup_msg("History", history_file.read())
+				self.popup_msg("History", str(history_file.readlines()), history_display=True)
 		except FileNotFoundError:
 			self.popup_msg("History", "No history to display")
+
+	def clear_history(self):
+		# Clears contents of file by setting it to write mode
+		with open(_history, 'w'):
+			pass
 
 	def fade(self):
 		self.setWindowOpacity(0.2)
@@ -366,8 +408,14 @@ class MainWindow(QMainWindow):
 				self.ui.student_checkbox.setChecked(True)
 
 	# Function to display an error if we get one
-	def popup_msg(self, title, message):
-		QMessageBox.about(self, title, message)
+	def popup_msg(self, title, message, history_display=False):
+		if history_display:
+			clear = self.QHistoryBox.addButton('Clear History', self.QHistoryBox.AcceptRole)
+			clear.clicked.connect(self.clear_history)
+			self.QHistoryBox.about(self, title, message)
+			if clear == QMessageBox.Yes:
+				print("test")
+		self.QMessageBox.about(self, title, message)
 
 	# Center our application instead of putting it in the top left
 	def center(self):
@@ -470,7 +518,7 @@ class MainWindow(QMainWindow):
 		self.device_type = self.ui.device_textbox.text().strip()
 		self.sponsor = self.ui.sponsor_textbox.text().strip()
 
-		self.write_to_history(self.username, self.mac_address, self.device_type, datetime.datetime.now().hour)
+		self.write_to_history(self.username, self.mac_address, self.device_type)
 
 		if self.user_type == 'other':
 			self.registration_thread = RegisterThread(self.username, self.mac_address, self.device_type, self.sponsor,
