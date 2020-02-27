@@ -410,7 +410,7 @@ class MainWindow(QMainWindow):
 	# Function to display an error if we get one
 	def popup_msg(self, title, message, history_display=False):
 		if history_display:
-			clear = self.QHistoryBox.addButton('Clear History', self.QHistoryBox.AcceptRole)
+			clear = self.QHistoryBox.addButton('Clear History', self.QHistoryBox.AcceptRole) # TODO: Fix TypeError exception
 			clear.clicked.connect(self.clear_history)
 			self.QHistoryBox.about(self, title, message)
 			if clear == QMessageBox.Yes:
