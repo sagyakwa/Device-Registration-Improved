@@ -1,12 +1,23 @@
 import json
 import re
 from datetime import datetime
+from typing import Dict, Any, Union
 
 import requests
 from bs4 import BeautifulSoup
+from requests.cookies import RequestsCookieJar
+from requests.models import Response
+from requests.sessions import Session
 
 
 class Register:
+	session: Session
+	login_url: str
+	request_url: str
+	challenge_key: object
+	cookies: RequestsCookieJar
+	headers: Dict[Union[str, Any], Union[str, Any]]
+	data: Dict[str, str]
 	post_website: object
 
 	def __init__(self):
@@ -51,7 +62,7 @@ class Register:
 		"""
 		with requests.Session() as session:
 			# Get cookie from response
-			website = session.get(self.login_url)
+			website: Response = session.get(self.login_url)
 			self.cookies = website.cookies
 			# Get challenge key!
 			source = website.content
@@ -85,11 +96,11 @@ class Register:
 
 		# We at least need this value ALL the time
 		assert (username is not None), "Framingham State username is needed. If the person is not a student, " \
-		                               "their first and last name will do fine. "
+		                               "their first and last name will do fine."
 
 		with requests.Session() as session:
-			web = session.post(self.login_url, cookies=self.cookies, data=self.data, headers=self.headers)
-			self.challenge_key = get_challenge_key(web.content)
+			website = session.post(self.login_url, cookies=self.cookies, data=self.data, headers=self.headers)
+			self.challenge_key = get_challenge_key(website.content)
 			if get_mac_address:
 				return self.find_mac_address(session, username, user_id)
 			elif add_user:
