@@ -6,4 +6,4 @@ Used by IT internally at Framingham State University.
 
 
 ![Device Registration Dark version](Images/device_registration_dark.png)
-![Device Registration Light Version](Imagesdevice_registration_light.png)
+![Device Registration Light Version](Images/device_registration_light.png)
