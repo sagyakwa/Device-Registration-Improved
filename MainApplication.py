@@ -44,7 +44,7 @@ def resource_path(relative_path: object) -> object:
 
 _UI: object = resource_path('mainwindow.ui')
 _MAC_UI: object = resource_path('second_window.ui')
-_logo: object = resource_path('Images and Icons/purple_flame.svg')
+_logo: object = resource_path('Images/purple_flame.svg')
 _config: object = resource_path(Path.home() / 'dev_config')
 _history: object = resource_path(Path.home() / 'device_registration_history')
 _about: object = resource_path('about')
@@ -305,8 +305,8 @@ class MainWindow(QMainWindow):
 
 		"""
 		self.setWindowIcon(QIcon(_logo))
-		self.dark_mode_icon = QIcon(resource_path('Images and Icons/night_mode.ico'))
-		self.light_mode_icon = QIcon(resource_path('Images and Icons/light_mode.ico'))
+		self.dark_mode_icon = QIcon(resource_path('Images/night_mode.ico'))
+		self.light_mode_icon = QIcon(resource_path('Images/light_mode.ico'))
 		self.ui.user_label.setPixmap(QPixmap(resource_path('user_ico')))
 		self.ui.mac_label.setPixmap(QPixmap(resource_path('mac_ico')))
 		self.ui.device_label_2.setPixmap(QPixmap(resource_path('device_ico')))
@@ -321,7 +321,7 @@ class MainWindow(QMainWindow):
 		self.ui.faculty_checkbox.stateChanged.connect(self.on_state_change)
 		self.ui.other_checkbox.stateChanged.connect(self.on_state_change)
 		self.user_type = 'student'
-		self.ui.register_button.setIcon(QIcon('Images and Icons/reg.png'))
+		self.ui.register_button.setIcon(QIcon('Images/reg.png'))
 		self.setStyleSheet(open('modern_ui/style.qss', 'r').read())
 		self.mw.show()
 
